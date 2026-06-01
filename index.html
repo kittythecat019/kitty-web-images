@@ -7,16 +7,29 @@
 <style>
 body{
     font-family:Arial;
-    text-align:center;
+    padding:20px;
+}
+
+.item{
+    border:1px solid #ccc;
+    padding:10px;
+    margin-bottom:15px;
 }
 
 img{
-    max-width:300px;
-    margin:10px;
-    border:1px solid #ccc;
+    max-width:200px;
+    display:block;
+    margin-bottom:10px;
+}
+
+input{
+    width:80%;
+}
+
+button{
+    margin-left:5px;
 }
 </style>
-
 </head>
 <body>
 
@@ -33,23 +46,47 @@ fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`)
 .then(r => r.json())
 .then(files => {
 
-    let gallery = document.getElementById("gallery");
+    const gallery = document.getElementById("gallery");
 
     files.forEach(file => {
 
-        if(file.type === "file"){
+        if(file.type !== "file") return;
 
-            let img = document.createElement("img");
+        const imageUrl =
+        `https://${user}.github.io/${repo}/images/${file.name}`;
 
-            img.src = file.download_url;
+        const div = document.createElement("div");
+        div.className = "item";
 
-            gallery.appendChild(img);
+        div.innerHTML = `
+            <img src="${imageUrl}">
+            <b>${file.name}</b><br><br>
 
-        }
+            <input
+                id="link-${file.name}"
+                value="${imageUrl}"
+                readonly>
+
+            <button onclick="copyLink('link-${file.name}')">
+                Copy Link
+            </button>
+        `;
+
+        gallery.appendChild(div);
 
     });
 
 });
+
+function copyLink(id){
+
+    const input = document.getElementById(id);
+
+    navigator.clipboard.writeText(input.value);
+
+    alert("Đã copy link!");
+
+}
 
 </script>
 
