@@ -4,23 +4,32 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<title>Kho Ảnh GitHub</title>
+
 <link rel="icon" type="image/png" href="favicon.png">
-    
-<title>Kho Ảnh</title>
 
 <style>
 
 body{
     font-family:Arial,sans-serif;
     background:linear-gradient(135deg,#eef2ff,#f0f9ff);
-    padding:20px;
     margin:0;
+    padding:20px;
 }
 
 h1{
     text-align:center;
     color:#2c3e50;
-    margin-bottom:30px;
+    margin-bottom:15px;
+}
+
+.top-buttons{
+    text-align:center;
+    margin-bottom:25px;
+}
+
+.top-buttons a{
+    text-decoration:none;
 }
 
 #gallery{
@@ -53,8 +62,8 @@ img{
 
 .link-row{
     display:flex;
-    gap:10px;
     flex-wrap:wrap;
+    gap:10px;
 }
 
 input{
@@ -70,14 +79,38 @@ button{
     border:none;
     border-radius:8px;
     padding:10px 15px;
-    background:#6366f1;
     color:white;
     cursor:pointer;
     transition:0.3s;
 }
 
 button:hover{
+    transform:translateY(-2px);
+}
+
+.copy-btn{
+    background:#6366f1;
+}
+
+.copy-btn:hover{
     background:#4f46e5;
+}
+
+.upload-btn{
+    background:#e74c3c;
+    margin-right:10px;
+}
+
+.upload-btn:hover{
+    background:#c0392b;
+}
+
+.folder-btn{
+    background:#16a085;
+}
+
+.folder-btn:hover{
+    background:#13856f;
 }
 
 .copied{
@@ -90,6 +123,13 @@ button:hover{
     color:#666;
 }
 
+.footer{
+    text-align:center;
+    margin-top:30px;
+    color:#666;
+    font-size:14px;
+}
+
 </style>
 </head>
 
@@ -97,20 +137,46 @@ button:hover{
 
 <h1>Kho Ảnh bằng GitHub</h1>
 
+<div class="top-buttons">
+
+<a id="uploadLink" target="_blank">
+    <button class="upload-btn">
+        Upload Ảnh
+    </button>
+</a>
+
+<a id="folderLink" target="_blank">
+    <button class="folder-btn">
+        Thư Mục Ảnh
+    </button>
+</a>
+
+</div>
+
 <div id="gallery">
     <div class="loading">Đang tải ảnh...</div>
 </div>
 
+<div class="footer">
+    Tự động hiển thị tất cả ảnh trong thư mục images
+</div>
+
 <script>
 
-// =========================
-// SỬA 2 DÒNG NÀY
-// =========================
+// =====================
+// CHỈ SỬA 2 DÒNG NÀY
+// =====================
 
 const user = "kittythecat019";
 const repo = "kitty-web-images";
 
-// =========================
+// =====================
+
+document.getElementById("uploadLink").href =
+`https://github.com/${user}/${repo}/upload/main/images`;
+
+document.getElementById("folderLink").href =
+`https://github.com/${user}/${repo}/tree/main/images`;
 
 const gallery = document.getElementById("gallery");
 
@@ -146,6 +212,7 @@ fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`)
                     readonly>
 
                 <button
+                    class="copy-btn"
                     onclick="copyLink(this,'link-${file.name}')">
                     Copy Link
                 </button>
@@ -160,8 +227,16 @@ fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`)
 })
 .catch(() => {
 
-    gallery.innerHTML =
-    "<h2>Không thể tải ảnh. Kiểm tra tên GitHub hoặc tên repo.</h2>";
+    gallery.innerHTML = `
+        <div style="
+            text-align:center;
+            background:white;
+            padding:20px;
+            border-radius:15px;">
+            Không tải được ảnh.<br><br>
+            Kiểm tra tên GitHub hoặc tên Repository.
+        </div>
+    `;
 
 });
 
