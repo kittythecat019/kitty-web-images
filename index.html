@@ -20,7 +20,13 @@ body{
 h1{
     text-align:center;
     color:#2c3e50;
-    margin-bottom:15px;
+    margin-bottom:10px;
+}
+
+#stats{
+    text-align:center;
+    color:#666;
+    margin-bottom:20px;
 }
 
 .top-buttons{
@@ -30,6 +36,48 @@ h1{
 
 .top-buttons a{
     text-decoration:none;
+}
+
+button{
+    border:none;
+    border-radius:8px;
+    padding:10px 15px;
+    color:white;
+    cursor:pointer;
+    transition:0.25s;
+}
+
+button:hover{
+    transform:translateY(-2px);
+}
+
+.upload-btn{
+    background:#e74c3c;
+    margin-right:10px;
+}
+
+.upload-btn:hover{
+    background:#c0392b;
+}
+
+.folder-btn{
+    background:#16a085;
+}
+
+.folder-btn:hover{
+    background:#13856f;
+}
+
+.copy-btn{
+    background:#6366f1;
+}
+
+.copy-btn:hover{
+    background:#4f46e5;
+}
+
+.copied{
+    background:#27ae60 !important;
 }
 
 #gallery{
@@ -45,7 +93,7 @@ h1{
     box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
 
-img{
+.item img{
     max-width:250px;
     max-height:250px;
     border-radius:10px;
@@ -75,67 +123,33 @@ input{
     background:#fafafa;
 }
 
-button{
-    border:none;
-    border-radius:8px;
-    padding:10px 15px;
-    color:white;
-    cursor:pointer;
-    transition:0.3s;
-}
-
-button:hover{
-    transform:translateY(-2px);
-}
-
-.copy-btn{
-    background:#6366f1;
-}
-
-.copy-btn:hover{
-    background:#4f46e5;
-}
-
-.upload-btn{
-    background:#e74c3c;
-    margin-right:10px;
-}
-
-.upload-btn:hover{
-    background:#c0392b;
-}
-
-.folder-btn{
-    background:#16a085;
-}
-
-.folder-btn:hover{
-    background:#13856f;
-}
-
-.copied{
-    background:#27ae60 !important;
-}
-
 .loading{
     text-align:center;
-    font-size:20px;
+    font-size:18px;
     color:#666;
 }
 
-.footer{
-    text-align:center;
-    margin-top:30px;
-    color:#666;
-    font-size:14px;
+#newImageNotice{
+    position:fixed;
+    top:15px;
+    right:15px;
+    background:#27ae60;
+    color:white;
+    padding:12px 18px;
+    border-radius:10px;
+    display:none;
+    box-shadow:0 4px 12px rgba(0,0,0,0.2);
 }
 
 </style>
 </head>
-
 <body>
 
-<h1>Kho Ảnh bằng GitHub</h1>
+<h1>Kho Ảnh</h1>
+
+<div id="stats">
+    Đang tải...
+</div>
 
 <div class="top-buttons">
 
@@ -154,11 +168,13 @@ button:hover{
 </div>
 
 <div id="gallery">
-    <div class="loading">Đang tải ảnh...</div>
+    <div class="loading">
+        Đang tải ảnh...
+    </div>
 </div>
 
-<div class="footer">
-    Tự động hiển thị tất cả ảnh trong thư mục images
+<div id="newImageNotice">
+    Có ảnh mới!
 </div>
 
 <script>
@@ -179,66 +195,97 @@ document.getElementById("folderLink").href =
 `https://github.com/${user}/${repo}/tree/main/images`;
 
 const gallery = document.getElementById("gallery");
+const stats = document.getElementById("stats");
+
+let knownFiles = new Set();
+
+function showNotice(){
+
+    const n = document.getElementById("newImageNotice");
+
+    n.style.display = "block";
+
+    setTimeout(()=>{
+        n.style.display = "none";
+    },3000);
+
+}
+
+function addImage(file){
+
+    const imageUrl = file.download_url;
+
+    const item = document.createElement("div");
+
+    item.className = "item";
+
+    item.innerHTML = `
+        <img src="${imageUrl}" loading="lazy">
+
+        <div class="filename">
+            ${file.name}
+        </div>
+
+        <div class="link-row">
+
+            <input
+                id="link-${file.name}"
+                value="${imageUrl}"
+                readonly>
+
+            <button
+                class="copy-btn"
+                onclick="copyLink(this,'link-${file.name}')">
+                Copy Link
+            </button>
+
+        </div>
+    `;
+
+    gallery.prepend(item);
+
+}
+
+function loadImages(){
 
 fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`)
 .then(response => response.json())
 .then(files => {
 
-    gallery.innerHTML = "";
+    if(gallery.querySelector(".loading")){
+        gallery.innerHTML = "";
+    }
+
+    stats.innerHTML =
+    `Tổng số ảnh: ${files.length}`;
 
     files.forEach(file => {
 
         if(file.type !== "file") return;
 
-        const imageUrl =
-        `https://${user}.github.io/${repo}/images/${file.name}`;
+        if(!knownFiles.has(file.name)){
 
-        const item = document.createElement("div");
+            if(knownFiles.size > 0){
+                showNotice();
+            }
 
-        item.className = "item";
+            knownFiles.add(file.name);
 
-        item.innerHTML = `
-            <img src="${imageUrl}" loading="lazy">
+            addImage(file);
 
-            <div class="filename">
-                ${file.name}
-            </div>
-
-            <div class="link-row">
-
-                <input
-                    id="link-${file.name}"
-                    value="${imageUrl}"
-                    readonly>
-
-                <button
-                    class="copy-btn"
-                    onclick="copyLink(this,'link-${file.name}')">
-                    Copy Link
-                </button>
-
-            </div>
-        `;
-
-        gallery.appendChild(item);
+        }
 
     });
 
 })
 .catch(() => {
 
-    gallery.innerHTML = `
-        <div style="
-            text-align:center;
-            background:white;
-            padding:20px;
-            border-radius:15px;">
-            Không tải được ảnh.<br><br>
-            Kiểm tra tên GitHub hoặc tên Repository.
-        </div>
-    `;
+    stats.innerHTML =
+    "Không thể kết nối tới GitHub";
 
 });
+
+}
 
 function copyLink(button,id){
 
@@ -249,7 +296,7 @@ function copyLink(button,id){
     button.innerText = "Đã copy";
     button.classList.add("copied");
 
-    setTimeout(() => {
+    setTimeout(()=>{
 
         button.innerText = "Copy Link";
         button.classList.remove("copied");
@@ -257,6 +304,11 @@ function copyLink(button,id){
     },3000);
 
 }
+
+loadImages();
+
+/* Tự động kiểm tra ảnh mới mỗi 5 giây */
+setInterval(loadImages,5000);
 
 </script>
 
