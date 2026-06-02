@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Kho Ảnh</title>
+<title>Kho ảnh</title>
 
 <link rel="icon" type="image/png" href="favicon.png">
 
@@ -93,12 +93,19 @@ button:hover{
     box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
 
-.item img{
+.preview{
+    margin-bottom:10px;
+}
+
+.preview img{
     max-width:250px;
     max-height:250px;
     border-radius:10px;
-    display:block;
-    margin-bottom:10px;
+}
+
+.preview video{
+    max-width:300px;
+    border-radius:10px;
 }
 
 .filename{
@@ -125,11 +132,11 @@ input{
 
 .loading{
     text-align:center;
-    font-size:18px;
     color:#666;
+    font-size:18px;
 }
 
-#newImageNotice{
+#notice{
     position:fixed;
     top:15px;
     right:15px;
@@ -143,50 +150,53 @@ input{
 
 </style>
 </head>
+
 <body>
 
-<h1>Kho Ảnh</h1>
+<h1>Kho ảnh</h1>
 
 <div id="stats">
-    Đang tải...
+Đang tải...
 </div>
 
 <div class="top-buttons">
 
 <a id="uploadLink" target="_blank">
-    <button class="upload-btn">
-        Upload Ảnh
-    </button>
+<button class="upload-btn">
+Upload Ảnh
+</button>
 </a>
 
 <a id="folderLink" target="_blank">
-    <button class="folder-btn">
-        Thư Mục Ảnh
-    </button>
+<button class="folder-btn">
+Thư Mục
+</button>
 </a>
 
 </div>
 
 <div id="gallery">
-    <div class="loading">
-        Đang tải ảnh...
-    </div>
+
+<div class="loading">
+Đang tải file
 </div>
 
-<div id="newImageNotice">
-    Có ảnh mới!
+</div>
+
+<div id="notice">
+Có file mới!
 </div>
 
 <script>
 
-// =====================
+// ====================
 // CHỈ SỬA 2 DÒNG NÀY
-// =====================
+// ====================
 
 const user = "kittythecat019";
 const repo = "kitty-web-images";
 
-// =====================
+// ====================
 
 document.getElementById("uploadLink").href =
 `https://github.com/${user}/${repo}/upload/main/images`;
@@ -201,7 +211,7 @@ let knownFiles = new Set();
 
 function showNotice(){
 
-    const n = document.getElementById("newImageNotice");
+    const n = document.getElementById("notice");
 
     n.style.display = "block";
 
@@ -211,16 +221,43 @@ function showNotice(){
 
 }
 
-function addImage(file){
+function addFile(file){
 
-    const imageUrl = file.download_url;
+    const previewUrl = file.download_url;
+
+    const copyUrl =
+    `https://${user}.github.io/${repo}/images/${file.name}`;
+
+    const ext =
+    file.name.split(".").pop().toLowerCase();
+
+    let previewHTML = "";
+
+    if(["mp4","webm","ogg","mov"].includes(ext)){
+
+        previewHTML = `
+        <video controls>
+            <source src="${previewUrl}">
+        </video>
+        `;
+
+    }else{
+
+        previewHTML = `
+        <img src="${previewUrl}" loading="lazy">
+        `;
+
+    }
 
     const item = document.createElement("div");
 
     item.className = "item";
 
     item.innerHTML = `
-        <img src="${imageUrl}" loading="lazy">
+
+        <div class="preview">
+            ${previewHTML}
+        </div>
 
         <div class="filename">
             ${file.name}
@@ -229,37 +266,40 @@ function addImage(file){
         <div class="link-row">
 
             <input
-                id="link-${file.name}"
-                value="${imageUrl}"
-                readonly>
+            id="link-${file.name}"
+            value="${copyUrl}"
+            readonly>
 
             <button
-                class="copy-btn"
-                onclick="copyLink(this,'link-${file.name}')">
-                Copy Link
+            class="copy-btn"
+            onclick="copyLink(this,'link-${file.name}')">
+
+            Copy Link
+
             </button>
 
         </div>
+
     `;
 
     gallery.prepend(item);
 
 }
 
-function loadImages(){
+function loadFiles(){
 
 fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`)
-.then(response => response.json())
-.then(files => {
+.then(r=>r.json())
+.then(files=>{
 
     if(gallery.querySelector(".loading")){
         gallery.innerHTML = "";
     }
 
     stats.innerHTML =
-    `Tổng số ảnh: ${files.length}`;
+    `Tổng số file: ${files.length}`;
 
-    files.forEach(file => {
+    files.forEach(file=>{
 
         if(file.type !== "file") return;
 
@@ -271,17 +311,17 @@ fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`)
 
             knownFiles.add(file.name);
 
-            addImage(file);
+            addFile(file);
 
         }
 
     });
 
 })
-.catch(() => {
+.catch(()=>{
 
     stats.innerHTML =
-    "Không thể kết nối tới GitHub";
+    "Không kết nối được GitHub";
 
 });
 
@@ -289,26 +329,34 @@ fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`)
 
 function copyLink(button,id){
 
-    const input = document.getElementById(id);
+    const input =
+    document.getElementById(id);
 
-    navigator.clipboard.writeText(input.value);
+    navigator.clipboard.writeText(
+        input.value
+    );
 
-    button.innerText = "Đã copy";
+    button.innerText =
+    "Đã copy";
+
     button.classList.add("copied");
 
     setTimeout(()=>{
 
-        button.innerText = "Copy Link";
-        button.classList.remove("copied");
+        button.innerText =
+        "Copy Link";
+
+        button.classList.remove(
+            "copied"
+        );
 
     },3000);
 
 }
 
-loadImages();
+loadFiles();
 
-/* Tự động kiểm tra ảnh mới mỗi 5 giây */
-setInterval(loadImages,5000);
+setInterval(loadFiles,5000);
 
 </script>
 
