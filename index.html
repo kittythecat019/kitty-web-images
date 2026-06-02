@@ -34,10 +34,6 @@ h1{
     margin-bottom:25px;
 }
 
-.top-buttons a{
-    text-decoration:none;
-}
-
 button{
     border:none;
     border-radius:8px;
@@ -76,10 +72,6 @@ button:hover{
     padding:15px;
     margin-bottom:20px;
     box-shadow:0 4px 12px rgba(0,0,0,0.1);
-}
-
-.preview{
-    margin-bottom:10px;
 }
 
 .preview img,
@@ -151,7 +143,7 @@ input{
 </div>
 
 <div id="gallery">
-<div class="loading">Đang tải file</div>
+<div class="loading">Đang tải file...</div>
 </div>
 
 <div id="notice">Có file mới!</div>
@@ -160,6 +152,12 @@ input{
 
 const user = "kittythecat019";
 const repo = "kitty-web-images";
+
+/* =========================
+   🔥 DÁN TOKEN VÀO ĐÂY
+========================= */
+const TOKEN = "DAN_TOKEN_CUA_BAN_VAO_DAY";
+/* ========================= */
 
 document.getElementById("uploadLink").href =
 `https://github.com/${user}/${repo}/upload/main/images`;
@@ -170,21 +168,20 @@ document.getElementById("folderLink").href =
 const gallery = document.getElementById("gallery");
 const stats = document.getElementById("stats");
 
-// lưu trạng thái hiện tại
 let knownFiles = new Map();
 
 function showNotice(){
     const n = document.getElementById("notice");
     n.style.display = "block";
-    setTimeout(()=> n.style.display = "none", 3000);
+    setTimeout(()=> n.style.display = "none",3000);
 }
 
 function unlockCopy(id){
     const btn = document.getElementById(id);
-    if(!btn) return;
-
-    btn.disabled = false;
-    btn.innerText = "Copy Link";
+    if(btn){
+        btn.disabled = false;
+        btn.innerText = "Copy Link";
+    }
 }
 
 function addFile(file){
@@ -253,9 +250,14 @@ function addFile(file){
 
 function loadFiles(){
 
-fetch(`https://api.github.com/repos/${user}/${repo}/contents/images?nocache=${Date.now()}`)
-.then(r=>r.json())
-.then(files=>{
+fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`, {
+    headers: {
+        "Authorization": `Bearer ${TOKEN}`,
+        "Accept": "application/vnd.github+json"
+    }
+})
+.then(r => r.json())
+.then(files => {
 
     if(!Array.isArray(files)) return;
 
@@ -270,7 +272,7 @@ fetch(`https://api.github.com/repos/${user}/${repo}/contents/images?nocache=${Da
         currentFiles.set(file.name, file);
     });
 
-    // ❌ xóa file không còn tồn tại
+    // remove deleted files
     document.querySelectorAll(".item").forEach(item=>{
         const name = item.getAttribute("data-name");
         if(!currentFiles.has(name)){
@@ -278,7 +280,7 @@ fetch(`https://api.github.com/repos/${user}/${repo}/contents/images?nocache=${Da
         }
     });
 
-    // ➕ thêm file mới
+    // add new files
     currentFiles.forEach((file, name)=>{
 
         if(!knownFiles.has(name)){
@@ -292,10 +294,9 @@ fetch(`https://api.github.com/repos/${user}/${repo}/contents/images?nocache=${Da
     stats.innerHTML = `Tổng số file: ${currentFiles.size}`;
 
 })
-.catch(()=>{
-
-    stats.innerHTML = "Không kết nối được GitHub";
-
+.catch(err=>{
+    console.log(err);
+    stats.innerHTML = "Lỗi GitHub API (check token)";
 });
 
 }
@@ -318,7 +319,7 @@ function copyLink(button,id){
 }
 
 loadFiles();
-setInterval(loadFiles,5000);
+setInterval(loadFiles,15000);
 
 </script>
 
