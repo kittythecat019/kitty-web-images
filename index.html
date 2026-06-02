@@ -51,29 +51,14 @@ button:hover{
     transform:translateY(-2px);
 }
 
-.upload-btn{
-    background:#e74c3c;
-    margin-right:10px;
-}
+.upload-btn{ background:#e74c3c; margin-right:10px; }
+.folder-btn{ background:#16a085; }
 
-.upload-btn:hover{
-    background:#c0392b;
-}
+.copy-btn{ background:#6366f1; }
 
-.folder-btn{
-    background:#16a085;
-}
-
-.folder-btn:hover{
-    background:#13856f;
-}
-
-.copy-btn{
-    background:#6366f1;
-}
-
-.copy-btn:hover{
-    background:#4f46e5;
+.copy-btn:disabled{
+    background:#999;
+    cursor:not-allowed;
 }
 
 .copied{
@@ -97,14 +82,10 @@ button:hover{
     margin-bottom:10px;
 }
 
-.preview img{
+.preview img,
+.preview video{
     max-width:250px;
     max-height:250px;
-    border-radius:10px;
-}
-
-.preview video{
-    max-width:300px;
     border-radius:10px;
 }
 
@@ -155,48 +136,30 @@ input{
 
 <h1>Kho ảnh</h1>
 
-<div id="stats">
-Đang tải...
-</div>
+<div id="stats">Đang tải...</div>
 
 <div class="top-buttons">
 
 <a id="uploadLink" target="_blank">
-<button class="upload-btn">
-Upload Ảnh
-</button>
+<button class="upload-btn">Upload Ảnh</button>
 </a>
 
 <a id="folderLink" target="_blank">
-<button class="folder-btn">
-Thư Mục
-</button>
+<button class="folder-btn">Thư Mục</button>
 </a>
 
 </div>
 
 <div id="gallery">
-
-<div class="loading">
-Đang tải file
+<div class="loading">Đang tải file</div>
 </div>
 
-</div>
-
-<div id="notice">
-Có file mới!
-</div>
+<div id="notice">Có file mới!</div>
 
 <script>
 
-// ====================
-// CHỈ SỬA 2 DÒNG NÀY
-// ====================
-
 const user = "kittythecat019";
 const repo = "kitty-web-images";
-
-// ====================
 
 document.getElementById("uploadLink").href =
 `https://github.com/${user}/${repo}/upload/main/images`;
@@ -207,18 +170,21 @@ document.getElementById("folderLink").href =
 const gallery = document.getElementById("gallery");
 const stats = document.getElementById("stats");
 
-let knownFiles = new Set();
+// lưu trạng thái hiện tại
+let knownFiles = new Map();
 
 function showNotice(){
-
     const n = document.getElementById("notice");
-
     n.style.display = "block";
+    setTimeout(()=> n.style.display = "none", 3000);
+}
 
-    setTimeout(()=>{
-        n.style.display = "none";
-    },3000);
+function unlockCopy(id){
+    const btn = document.getElementById(id);
+    if(!btn) return;
 
+    btn.disabled = false;
+    btn.innerText = "Copy Link";
 }
 
 function addFile(file){
@@ -228,15 +194,22 @@ function addFile(file){
     const copyUrl =
     `https://${user}.github.io/${repo}/images/${file.name}`;
 
-    const ext =
-    file.name.split(".").pop().toLowerCase();
+    const ext = file.name.split(".").pop().toLowerCase();
+
+    const btnId = `btn-${file.name}`;
+    const inputId = `link-${file.name}`;
+
+    const item = document.createElement("div");
+    item.className = "item";
+    item.setAttribute("data-name", file.name);
 
     let previewHTML = "";
 
     if(["mp4","webm","ogg","mov"].includes(ext)){
 
         previewHTML = `
-        <video controls>
+        <video controls preload="metadata"
+        onloadeddata="unlockCopy('${btnId}')">
             <source src="${previewUrl}">
         </video>
         `;
@@ -244,17 +217,12 @@ function addFile(file){
     }else{
 
         previewHTML = `
-        <img src="${previewUrl}" loading="lazy">
+        <img src="${previewUrl}" loading="lazy" decoding="async"
+        onload="unlockCopy('${btnId}')">
         `;
-
     }
 
-    const item = document.createElement("div");
-
-    item.className = "item";
-
     item.innerHTML = `
-
         <div class="preview">
             ${previewHTML}
         </div>
@@ -265,63 +233,68 @@ function addFile(file){
 
         <div class="link-row">
 
-            <input
-            id="link-${file.name}"
-            value="${copyUrl}"
-            readonly>
+            <input id="${inputId}" value="${copyUrl}" readonly>
 
             <button
             class="copy-btn"
-            onclick="copyLink(this,'link-${file.name}')">
+            id="${btnId}"
+            disabled
+            onclick="copyLink(this,'${inputId}')">
 
-            Copy Link
+            Loading...
 
             </button>
 
         </div>
-
     `;
 
     gallery.prepend(item);
-
 }
 
 function loadFiles(){
 
-fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`)
+fetch(`https://api.github.com/repos/${user}/${repo}/contents/images?nocache=${Date.now()}`)
 .then(r=>r.json())
 .then(files=>{
+
+    if(!Array.isArray(files)) return;
 
     if(gallery.querySelector(".loading")){
         gallery.innerHTML = "";
     }
 
-    stats.innerHTML =
-    `Tổng số file: ${files.length}`;
+    const currentFiles = new Map();
 
     files.forEach(file=>{
-
         if(file.type !== "file") return;
+        currentFiles.set(file.name, file);
+    });
 
-        if(!knownFiles.has(file.name)){
+    // ❌ xóa file không còn tồn tại
+    document.querySelectorAll(".item").forEach(item=>{
+        const name = item.getAttribute("data-name");
+        if(!currentFiles.has(name)){
+            item.remove();
+        }
+    });
 
-    if(knownFiles.size > 0){
-        showNotice();
-    }
+    // ➕ thêm file mới
+    currentFiles.forEach((file, name)=>{
 
-    knownFiles.add(file.name);
+        if(!knownFiles.has(name)){
+            if(knownFiles.size > 0) showNotice();
+            addFile(file);
+        }
 
-    addFile(file);
+        knownFiles.set(name, file);
+    });
 
-}
+    stats.innerHTML = `Tổng số file: ${currentFiles.size}`;
 
-});
-    
 })
 .catch(()=>{
 
-    stats.innerHTML =
-    "Không kết nối được GitHub";
+    stats.innerHTML = "Không kết nối được GitHub";
 
 });
 
@@ -329,33 +302,22 @@ fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`)
 
 function copyLink(button,id){
 
-    const input =
-    document.getElementById(id);
+    if(button.disabled) return;
 
-    navigator.clipboard.writeText(
-        input.value
-    );
+    const input = document.getElementById(id);
 
-    button.innerText =
-    "Đã copy";
+    navigator.clipboard.writeText(input.value);
 
+    button.innerText = "Đã copy";
     button.classList.add("copied");
 
     setTimeout(()=>{
-
-        button.innerText =
-        "Copy Link";
-
-        button.classList.remove(
-            "copied"
-        );
-
+        button.innerText = "Copy Link";
+        button.classList.remove("copied");
     },3000);
-
 }
 
 loadFiles();
-
 setInterval(loadFiles,5000);
 
 </script>
