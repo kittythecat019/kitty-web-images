@@ -208,6 +208,7 @@ const gallery = document.getElementById("gallery");
 const stats = document.getElementById("stats");
 
 let knownFiles = new Set();
+let firstLoad = true;
 
 function showNotice(){
 
@@ -315,7 +316,9 @@ fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`)
 
 }
 
-    });
+});
+
+firstLoad = false;
 
 })
 .catch(()=>{
