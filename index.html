@@ -305,15 +305,15 @@ fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`)
 
         if(!knownFiles.has(file.name)){
 
-            if(knownFiles.size > 0){
-                showNotice();
-            }
+    if(!firstLoad){
+        showNotice();
+    }
 
-            knownFiles.add(file.name);
+    knownFiles.add(file.name);
 
-            addFile(file);
+    addFile(file);
 
-        }
+}
 
     });
 
