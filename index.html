@@ -207,7 +207,7 @@ document.getElementById("folderLink").href =
 const gallery = document.getElementById("gallery");
 const stats = document.getElementById("stats");
 
-let knownFiles = new Set();
+let knownFiles = new map();
 let firstLoad = true;
 
 function showNotice(){
@@ -252,7 +252,8 @@ function addFile(file){
 
     const item = document.createElement("div");
 
-    item.className = "item";
+item.className = "item";
+item.id = `file-${file.name}`;
 
     item.innerHTML = `
 
@@ -297,29 +298,52 @@ fetch(`https://api.github.com/repos/${user}/${repo}/contents/images`)
         gallery.innerHTML = "";
     }
 
-    stats.innerHTML =
-    `Tổng số file: ${files.length}`;
+const currentFiles = new Set();
 
-    files.forEach(file=>{
+stats.innerHTML =
+`Tổng số file: ${files.length}`;
 
-        if(file.type !== "file") return;
+files.forEach(file=>{
 
-        if(!knownFiles.has(file.name)){
+    if(file.type !== "file") return;
 
-    if(!firstLoad){
-        showNotice();
+    currentFiles.add(file.name);
+
+    if(!knownFiles.has(file.name)){
+
+        if(!firstLoad){
+            showNotice();
+        }
+
+        knownFiles.set(file.name,true);
+
+        addFile(file);
+
     }
-
-    knownFiles.add(file.name);
-
-    addFile(file);
-
-}
 
 });
 
-firstLoad = false;
+// Xóa file không còn tồn tại
+for(const fileName of knownFiles.keys()){
 
+    if(!currentFiles.has(fileName)){
+
+        const element =
+        document.getElementById(
+            `file-${fileName}`
+        );
+
+        if(element){
+            element.remove();
+        }
+
+        knownFiles.delete(fileName);
+
+    }
+
+}
+
+firstLoad = false;
 })
 .catch(()=>{
 
@@ -354,6 +378,54 @@ function copyLink(button,id){
         );
 
     },3000);
+
+}
+    function checkLinkReady(url,buttonId,inputId){
+
+    const btn =
+    document.getElementById(buttonId);
+
+    let tries = 0;
+
+    const timer = setInterval(()=>{
+
+        tries++;
+
+        const img = new Image();
+
+        img.onload = ()=>{
+
+            btn.disabled = false;
+
+            btn.innerText =
+            "Copy Link";
+
+            btn.onclick = ()=>{
+
+                copyLink(
+                    btn,
+                    inputId
+                );
+
+            };
+
+            clearInterval(timer);
+
+        };
+
+        img.src =
+        url + "?t=" + Date.now();
+
+        if(tries >= 60){
+
+            btn.innerText =
+            "Chưa build xong";
+
+            clearInterval(timer);
+
+        }
+
+    },5000);
 
 }
 
